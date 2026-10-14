@@ -38,14 +38,14 @@ export const QUADRANTS: QuadrantMeta[] = [
   },
   {
     id: "q3",
-    name: "交给别人",
+    name: "少花时间",
     action: "紧急不重要",
     shortcut: "3",
     important: false,
     urgent: true,
     color: "var(--q3)",
-    emptyTitle: "没有需要委派的事",
-    emptyBody: "别人的紧急，未必是你的重要。",
+    emptyTitle: "没有琐事在催你",
+    emptyBody: "群消息、临时帮忙、可顺手处理的事放这里；别让它们挤占真正重要的时间。",
   },
   {
     id: "q4",

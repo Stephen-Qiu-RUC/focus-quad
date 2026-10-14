@@ -65,7 +65,7 @@ function sampleTasks(): Task[] {
       tags: ["工作"],
     }),
     createTask({ ...s, title: "每周三次跑步", container: "q2", due: atNoon(5), tags: ["健康"] }),
-    createTask({ ...s, title: "预订周五的会议室", container: "q3", due: atNoon(1) }),
+    createTask({ ...s, title: "回复群里催交材料的消息", container: "q3", due: atNoon(1) }),
     createTask({ ...s, title: "整理手机里的旧照片", container: "q4", tags: ["生活"] }),
   ];
 }
