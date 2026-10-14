@@ -1,57 +1,85 @@
 # 四象 · Quadrant
 
-基于艾森豪威尔矩阵的待办应用，视觉风格参考 Apple 人机界面指南。任务按「重要 × 紧急」分进四个象限：
+基于艾森豪威尔矩阵的待办应用。网页版可直接运行；桌面版通过 **Tauri 2** 打包为 Windows 安装程序。
 
-| 象限 | 名称 | 含义 |
-|---|---|---|
-| Q1 | 立即去做 | 重要且紧急 |
-| Q2 | 安排时间 | 重要不紧急 |
-| Q3 | 交给别人 | 紧急不重要 |
-| Q4 | 考虑删除 | 不重要不紧急 |
-
-## 功能（第一版）
-
-- 四象限画布与收集箱，任务可在象限间、象限内拖拽排序
-- 快速添加（⌘K / N）：支持中文自然语言日期（「明天下午3点」「周五」），`!重要`、`!紧急`、`!!`、`#标签` 标记，并自动推荐象限
-- 截止时间不足 24 小时的「安排时间」任务会提示移到「立即去做」
-- 任务详情面板：标题、象限、截止日期与时间、标签、备注
-- 完成、删除、移动均可撤销
-- 浅色 / 深色 / 跟随系统；桌面、平板、手机三种布局
-- 数据只保存在浏览器 `localStorage`，可导出 / 导入 JSON
-
-### 键盘快捷键
-
-| 按键 | 作用 |
-|---|---|
-| ⌘K / Ctrl+K / N | 新任务 |
-| 1–4、0 | 把选中的任务移到对应象限 / 收集箱 |
-| ⌫ / Delete | 删除选中的任务 |
-| Esc | 关闭详情 |
-| 快速添加中 ⌥1–4、⌥0 | 选择目标象限；⇧↵ 连续添加 |
-
-## 本地运行
+## 网页版
 
 需要 Node.js 20+。
 
 ```bash
 npm install
-npm run dev -- -p 4317
+npm run dev
 ```
 
-然后打开 <http://localhost:4317>。
+打开 <http://localhost:4317>。
+
+## Windows 桌面安装包
+
+当前仓库已接好 Tauri。Windows 安装包需要在 **Windows 本机**（或 GitHub Actions）上构建——Linux/macOS 无法直接打出 `.exe` 安装程序。
+
+### 一次性准备环境
+
+在 **PowerShell** 中安装依赖（只需做一次）：
+
+```powershell
+winget install OpenJS.NodeJS.LTS
+winget install Rustlang.Rustup
+winget install Microsoft.VisualStudio.2022.BuildTools
+```
+
+安装 Visual Studio Build Tools 时，勾选 **「使用 C++ 的桌面开发」**。
+
+装完后 **关掉并重新打开** PowerShell，执行：
+
+```powershell
+rustup default stable
+node -v
+rustc -V
+```
+
+Windows 10/11 一般已自带 **WebView2**；若启动报错，再安装 [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)。
+
+### 一键打包
+
+在项目根目录执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build-windows.ps1
+```
+
+成功后安装包在：
+
+```
+src-tauri\target\release\bundle\nsis\
+```
+
+文件名类似 `四象_0.1.0_x64-setup.exe`。双击安装（默认装到当前用户，无需管理员）。
+
+也可以手动执行：
+
+```powershell
+npm install
+npm run desktop:build
+```
+
+开发时调试桌面窗口：
+
+```powershell
+npm run tauri:dev
+```
+
+### 用 GitHub Actions 自动打包
+
+若仓库已推到 GitHub，可在 Actions 里手动运行 **Windows Installer**，或打 `v*` 标签触发；产物在 workflow 的 Artifacts 里下载。
+
+## 功能概览
+
+- 四象限画布与收集箱，拖拽分类与排序
+- 快速添加（⌘K / Ctrl+K / N），支持中文自然语言日期与 `!重要` / `#标签`
+- 截止不足 24 小时的「安排时间」任务会提示升级到「立即去做」
+- 浅色 / 深色；桌面、平板、手机布局
+- 数据保存在本机浏览器 / 桌面应用的本地存储，可导出 JSON
 
 ## 技术栈
 
-Next.js 16（App Router）· TypeScript · Tailwind CSS 4 · shadcn/ui（Base UI）· dnd-kit · Framer Motion · chrono-node
-
-## 目录
-
-```
-src/
-  app/                      页面与全局样式（色彩、材质令牌）
-  components/quadrant/      应用组件（矩阵、收集箱、详情面板、快速添加…）
-  components/ui/            shadcn/ui 基础组件
-  lib/store.ts              本地存储与所有数据操作
-  lib/parse.ts              自然语言解析与象限推荐
-  lib/dates.ts              日期格式化与到期判断
-```
+Next.js 16 · TypeScript · Tailwind CSS 4 · shadcn/ui · dnd-kit · Framer Motion · chrono-node · Tauri 2

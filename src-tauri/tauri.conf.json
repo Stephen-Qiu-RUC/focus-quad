@@ -1,0 +1,61 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "四象",
+  "version": "0.1.0",
+  "identifier": "app.quadrant.desktop",
+  "build": {
+    "frontendDist": "../out",
+    "devUrl": "http://localhost:4317",
+    "beforeDevCommand": "npm run dev -- -p 4317 -H 127.0.0.1",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "四象",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 390,
+        "minHeight": 640,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true,
+        "dragDropEnabled": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "category": "Productivity",
+    "shortDescription": "艾森豪威尔四象限待办",
+    "longDescription": "用艾森豪威尔矩阵整理待办：分清重要与紧急，专注真正值得做的事。数据保存在本机。",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "SimpChinese",
+          "English"
+        ],
+        "displayLanguageSelector": false
+      }
+    }
+  },
+  "mainBinaryName": "quadrant"
+}
