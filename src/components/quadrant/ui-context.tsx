@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState, useSyncExternalStore } from "react";
 import type { ContainerId } from "@/lib/types";
 
 interface QuickAddState {
@@ -23,13 +23,24 @@ interface UIContextValue {
 
 const UIContext = createContext<UIContextValue | null>(null);
 
-function useNow(intervalMs = 30_000) {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), intervalMs);
-    return () => clearInterval(id);
-  }, [intervalMs]);
-  return now;
+const SERVER_NOW = new Date(0);
+let clockNow: Date | null = null;
+
+function subscribeClock(onChange: () => void) {
+  const id = setInterval(() => {
+    clockNow = new Date();
+    onChange();
+  }, 30_000);
+  return () => clearInterval(id);
+}
+
+/** Wall clock that is only read in the browser, so prerendering stays static. */
+function useNow() {
+  return useSyncExternalStore(
+    subscribeClock,
+    () => (clockNow ??= new Date()),
+    () => SERVER_NOW,
+  );
 }
 
 export function UIProvider({ children }: { children: React.ReactNode }) {
