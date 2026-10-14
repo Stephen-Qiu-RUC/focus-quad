@@ -27,6 +27,7 @@ export function QuadrantCard({ meta, tasks }: { meta: QuadrantMeta; tasks: Task[
 
   return (
     <section
+      data-drop-container={meta.id}
       aria-label={`${meta.name}（${meta.action}）`}
       className={cn(
         "squircle relative flex min-h-[260px] flex-col overflow-hidden rounded-[20px] border bg-card shadow-card backdrop-blur-xl transition-[box-shadow,transform] duration-200",

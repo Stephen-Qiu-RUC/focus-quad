@@ -14,7 +14,7 @@ export function InboxSection({ tasks, className }: { tasks: Task[]; className?: 
   const { open } = tasksIn(tasks, "inbox", tagFilter);
 
   return (
-    <section aria-label="收集箱" className={cn("flex min-h-0 flex-col", className)}>
+    <section data-drop-container="inbox" aria-label="收集箱" className={cn("flex min-h-0 flex-col", className)}>
       <header className="flex items-center gap-2 px-3 pb-1.5">
         <Inbox className="size-4 text-muted-foreground" aria-hidden />
         <h2 className="flex-1 text-[15px] font-semibold">收集箱</h2>

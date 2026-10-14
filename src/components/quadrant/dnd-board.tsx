@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -37,6 +37,23 @@ const collision: CollisionDetection = (args) => {
   return rectIntersection(args);
 };
 
+const lastPointer = { x: 0, y: 0 };
+
+/**
+ * Collision state only updates on pointer moves after activation, so a drag
+ * that jumps straight to its target in one event would resolve to its origin.
+ */
+function containerAtPointer(): ContainerId | null {
+  for (const el of document.elementsFromPoint(lastPointer.x, lastPointer.y)) {
+    const zone = el.closest<HTMLElement>("[data-drop-container]");
+    if (zone) {
+      const id = zone.dataset.dropContainer;
+      return isContainer(id) ? id : null;
+    }
+  }
+  return null;
+}
+
 export function DndBoard({ tasks, children }: { tasks: Task[]; children: React.ReactNode }) {
   const { now } = useUI();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -45,6 +62,19 @@ export function DndBoard({ tasks, children }: { tasks: Task[]; children: React.R
     useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  useEffect(() => {
+    const track = (e: PointerEvent) => {
+      lastPointer.x = e.clientX;
+      lastPointer.y = e.clientY;
+    };
+    window.addEventListener("pointermove", track, true);
+    window.addEventListener("pointerup", track, true);
+    return () => {
+      window.removeEventListener("pointermove", track, true);
+      window.removeEventListener("pointerup", track, true);
+    };
+  }, []);
 
   const byId = new Map(tasks.map((t) => [t.id, t]));
   const active = activeId ? byId.get(activeId) ?? null : null;
@@ -73,11 +103,22 @@ export function DndBoard({ tasks, children }: { tasks: Task[]; children: React.R
     actions.moveTask(String(active.id), to, String(over.id), below);
   }
 
-  function onDragEnd({ active, over }: DragEndEvent) {
+  function onDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
     setActiveId(null);
-    if (!over || active.id === over.id || isContainer(over.id)) return;
+    const dropped = event.activatorEvent instanceof KeyboardEvent ? null : containerAtPointer();
+    if (dropped && dropped !== containerOf(active.id)) {
+      actions.moveTask(String(active.id), dropped);
+      return;
+    }
+    if (!over || active.id === over.id) return;
     const container = containerOf(over.id);
-    if (!container || containerOf(active.id) !== container) return;
+    if (!container) return;
+    if (containerOf(active.id) !== container) {
+      actions.moveTask(String(active.id), container, isContainer(over.id) ? null : String(over.id));
+      return;
+    }
+    if (isContainer(over.id)) return;
     const list = tasks.filter((t) => t.container === container && !t.completed);
     const from = list.findIndex((t) => t.id === active.id);
     const to = list.findIndex((t) => t.id === over.id);
