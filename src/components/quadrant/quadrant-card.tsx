@@ -76,7 +76,7 @@ export function QuadrantCard({ meta, tasks }: { meta: QuadrantMeta; tasks: Task[
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
-      <div className="scrollbar-thin relative flex min-h-0 flex-1 flex-col overflow-y-auto px-1.5 pb-2 [mask-image:linear-gradient(to_bottom,black_calc(100%-20px),transparent)]">
+      <div className="scrollbar-thin relative flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pt-1 pb-2">
         <TaskList
           container={meta.id}
           tasks={open}
@@ -88,9 +88,9 @@ export function QuadrantCard({ meta, tasks }: { meta: QuadrantMeta; tasks: Task[
               color={meta.color}
             />
           }
-          className="flex-1"
+          className="shrink-0"
         />
-        <InlineAdd container={meta.id} className="mb-2" />
+        <InlineAdd container={meta.id} className="mb-2 shrink-0" />
       </div>
     </section>
   );

@@ -20,18 +20,25 @@ export function isCheckedIn(habit: Pick<Habit, "doneOn">, now: Date) {
   return habit.doneOn.includes(dayKey(now));
 }
 
-/**
- * Consecutive days ending today, or ending yesterday when today is still open.
- * A missed day breaks the run.
- */
-export function habitStreak(doneOn: string[], now: Date) {
-  const done = new Set(doneOn);
-  let cursor = dayKey(now);
-  if (!done.has(cursor)) cursor = shiftDayKey(cursor, -1);
-  let count = 0;
-  while (done.has(cursor)) {
-    count += 1;
-    cursor = shiftDayKey(cursor, -1);
-  }
-  return count;
+export function clampTimesPerWeek(value: unknown) {
+  const raw = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(raw)) return 7;
+  return Math.min(7, Math.max(1, Math.round(raw)));
+}
+
+/** Monday of the local week that contains `now`. */
+export function weekStartKey(now: Date) {
+  const day = now.getDay();
+  const back = day === 0 ? 6 : day - 1;
+  return shiftDayKey(dayKey(now), -back);
+}
+
+export function countThisWeek(doneOn: string[], now: Date) {
+  const start = weekStartKey(now);
+  const end = shiftDayKey(start, 6);
+  return doneOn.filter((day) => day >= start && day <= end).length;
+}
+
+export function weekMet(habit: Pick<Habit, "doneOn" | "timesPerWeek">, now: Date) {
+  return countThisWeek(habit.doneOn, now) >= clampTimesPerWeek(habit.timesPerWeek);
 }

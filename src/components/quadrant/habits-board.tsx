@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Flame, Plus, Repeat, Trash2 } from "lucide-react";
+import { Minus, Plus, Repeat, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { actions } from "@/lib/store";
-import { habitStreak, isCheckedIn } from "@/lib/habits";
+import { clampTimesPerWeek, countThisWeek, isCheckedIn } from "@/lib/habits";
 import type { Habit } from "@/lib/types";
 import { CheckCircle } from "./check-circle";
 import { useUI } from "./ui-context";
@@ -22,13 +22,60 @@ function deleteHabit(habit: Habit) {
   });
 }
 
+function WeekDots({ count, target }: { count: number; target: number }) {
+  return (
+    <span className="inline-flex items-center gap-1" aria-hidden>
+      {Array.from({ length: target }, (_, index) => (
+        <span
+          key={index}
+          className={cn("size-1.5 rounded-full", index < count ? "bg-habit" : "bg-foreground/15")}
+        />
+      ))}
+    </span>
+  );
+}
+
+function TimesStepper({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (next: number) => void;
+}) {
+  return (
+    <span className="inline-flex h-7 items-center rounded-full bg-foreground/[0.05] text-[13px]">
+      <button
+        type="button"
+        aria-label="减少每周次数"
+        disabled={value <= 1}
+        onClick={() => onChange(value - 1)}
+        className="grid size-7 place-items-center rounded-full text-muted-foreground enabled:hover:bg-foreground/10 disabled:opacity-30"
+      >
+        <Minus className="size-3.5" />
+      </button>
+      <span className="min-w-14 text-center tabular-nums">每周 {value} 次</span>
+      <button
+        type="button"
+        aria-label="增加每周次数"
+        disabled={value >= 7}
+        onClick={() => onChange(value + 1)}
+        className="grid size-7 place-items-center rounded-full text-muted-foreground enabled:hover:bg-foreground/10 disabled:opacity-30"
+      >
+        <Plus className="size-3.5" />
+      </button>
+    </span>
+  );
+}
+
 function HabitCard({ habit }: { habit: Habit }) {
   const { now } = useUI();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(habit.title);
   const [notes, setNotes] = useState(habit.notes);
-  const done = isCheckedIn(habit, now);
-  const streak = habitStreak(habit.doneOn, now);
+  const target = clampTimesPerWeek(habit.timesPerWeek);
+  const count = countThisWeek(habit.doneOn, now);
+  const doneToday = isCheckedIn(habit, now);
+  const met = count >= target;
 
   function beginEdit() {
     setTitle(habit.title);
@@ -46,73 +93,82 @@ function HabitCard({ habit }: { habit: Habit }) {
   return (
     <article
       className={cn(
-        "flex min-w-[220px] flex-1 items-start gap-3 rounded-2xl border bg-background/70 px-3 py-2.5",
-        done && "bg-habit/10",
+        "flex min-w-[240px] flex-1 flex-col gap-2 rounded-2xl border bg-background/70 px-3 py-3",
+        met && "bg-habit/10",
       )}
-      onBlur={(e) => {
-        if (editing && !e.currentTarget.contains(e.relatedTarget)) save();
+      onBlur={(event) => {
+        if (editing && !event.currentTarget.contains(event.relatedTarget)) save();
       }}
     >
-      <CheckCircle
-        checked={done}
-        color="var(--habit)"
-        onToggle={() => actions.toggleHabitToday(habit.id, now)}
-        label={done ? `取消今天的「${habit.title}」打卡` : `为「${habit.title}」打卡`}
-        className="mt-0.5"
-      />
-      <div className="min-w-0 flex-1">
-        {editing ? (
-          <div className="flex flex-col gap-1.5">
-            <input
-              autoFocus
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.nativeEvent.isComposing) return;
-                if (e.key === "Escape") {
-                  setTitle(habit.title);
-                  setNotes(habit.notes);
-                  setEditing(false);
-                }
-              }}
-              aria-label="长期任务名称"
-              className="h-7 w-full bg-transparent text-[15px] font-medium outline-none"
-            />
-            <input
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.nativeEvent.isComposing) save();
-              }}
-              placeholder="备注，例如每天 20 个"
-              aria-label="备注"
-              className="h-7 w-full bg-transparent text-[13px] text-muted-foreground outline-none placeholder:text-muted-foreground/70"
-            />
-          </div>
-        ) : (
-          <button type="button" onClick={beginEdit} className="block w-full text-left">
-            <p className="truncate text-[15px] leading-5 font-medium">{habit.title}</p>
-            <p className="mt-0.5 flex items-center gap-1 text-[13px] leading-[18px] text-muted-foreground">
-              {streak > 0 && <Flame className="size-3 text-habit" aria-hidden />}
-              <span>
-                {done ? "今天已打卡" : "今天还没做"}
-                {streak > 0 ? ` · 连续 ${streak} 天` : ""}
-              </span>
-            </p>
-            {habit.notes && (
-              <p className="mt-0.5 truncate text-[13px] leading-[18px] text-muted-foreground">{habit.notes}</p>
-            )}
-          </button>
-        )}
+      <div className="flex items-start gap-3">
+        <CheckCircle
+          checked={doneToday}
+          color="var(--habit)"
+          onToggle={() => actions.toggleHabitToday(habit.id, now)}
+          label={doneToday ? `取消今天的「${habit.title}」` : `把今天计入「${habit.title}」`}
+          className="mt-0.5"
+        />
+        <div className="min-w-0 flex-1">
+          {editing ? (
+            <div className="flex flex-col gap-1.5">
+              <input
+                autoFocus
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.nativeEvent.isComposing) return;
+                  if (event.key === "Escape") {
+                    setTitle(habit.title);
+                    setNotes(habit.notes);
+                    setEditing(false);
+                  }
+                }}
+                aria-label="长期任务名称"
+                className="h-7 w-full bg-transparent text-[15px] leading-6 font-medium outline-none"
+              />
+              <input
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.nativeEvent.isComposing) save();
+                }}
+                placeholder="备注，例如每天 20 个"
+                aria-label="备注"
+                className="h-7 w-full bg-transparent text-[13px] text-muted-foreground outline-none placeholder:text-muted-foreground/70"
+              />
+            </div>
+          ) : (
+            <button type="button" onClick={beginEdit} className="block w-full text-left">
+              <p className="truncate text-[15px] leading-6 font-medium">{habit.title}</p>
+              <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] leading-5 text-muted-foreground">
+                <WeekDots count={Math.min(count, target)} target={target} />
+                <span className={cn("tabular-nums", met && "font-medium text-habit")}>
+                  本周 {count}/{target}
+                  {met ? " · 已达标" : ""}
+                </span>
+                <span>{doneToday ? "今天已计入" : "今天还没记"}</span>
+              </p>
+              {habit.notes && (
+                <p className="mt-1 truncate text-[13px] leading-5 text-muted-foreground">{habit.notes}</p>
+              )}
+            </button>
+          )}
+        </div>
+        <button
+          type="button"
+          aria-label={`删除「${habit.title}」`}
+          onClick={() => deleteHabit(habit)}
+          className="grid size-7 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+        >
+          <Trash2 className="size-3.5" />
+        </button>
       </div>
-      <button
-        type="button"
-        aria-label={`删除「${habit.title}」`}
-        onClick={() => deleteHabit(habit)}
-        className="grid size-7 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
-      >
-        <Trash2 className="size-3.5" />
-      </button>
+      <div className="pl-[34px]">
+        <TimesStepper
+          value={target}
+          onChange={(next) => actions.updateHabit(habit.id, { timesPerWeek: next })}
+        />
+      </div>
     </article>
   );
 }
@@ -120,16 +176,22 @@ function HabitCard({ habit }: { habit: Habit }) {
 function AddHabit() {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
+  const [times, setTimes] = useState(7);
+
+  function reset() {
+    setValue("");
+    setTimes(7);
+    setEditing(false);
+  }
 
   function submit() {
     const title = value.trim();
     if (!title) {
-      setEditing(false);
+      reset();
       return;
     }
-    actions.addHabit(title);
-    setValue("");
-    setEditing(false);
+    actions.addHabit(title, "", times);
+    reset();
   }
 
   if (!editing) {
@@ -146,32 +208,40 @@ function AddHabit() {
   }
 
   return (
-    <div className="flex h-9 min-w-48 items-center gap-2 rounded-full bg-foreground/[0.05] px-3">
-      <Repeat className="size-3.5 text-habit" aria-hidden />
-      <input
-        autoFocus
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.nativeEvent.isComposing) return;
-          if (e.key === "Enter") submit();
-          if (e.key === "Escape") {
-            setValue("");
-            setEditing(false);
-          }
-        }}
-        onBlur={submit}
-        placeholder="例如：背英语单词"
-        aria-label="新的长期任务"
-        className="h-7 min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-muted-foreground/70"
-      />
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="flex h-9 min-w-48 flex-1 items-center gap-2 rounded-full bg-foreground/[0.05] px-3">
+        <Repeat className="size-3.5 text-habit" aria-hidden />
+        <input
+          autoFocus
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.nativeEvent.isComposing) return;
+            if (event.key === "Enter") submit();
+            if (event.key === "Escape") reset();
+          }}
+          placeholder="例如：健身"
+          aria-label="新的长期任务"
+          className="h-7 min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-muted-foreground/70"
+        />
+      </div>
+      <TimesStepper value={times} onChange={setTimes} />
+      <button
+        type="button"
+        onClick={submit}
+        className="h-8 rounded-full bg-primary px-3 text-[13px] font-medium text-primary-foreground"
+      >
+        添加
+      </button>
     </div>
   );
 }
 
 export function HabitsBoard({ habits }: { habits: Habit[] }) {
   const { now } = useUI();
-  const doneCount = habits.filter((h) => isCheckedIn(h, now)).length;
+  const metCount = habits.filter(
+    (habit) => countThisWeek(habit.doneOn, now) >= clampTimesPerWeek(habit.timesPerWeek),
+  ).length;
 
   return (
     <section aria-label="长期任务" className="rounded-[20px] border bg-card px-4 py-3.5 shadow-card backdrop-blur-xl">
@@ -182,12 +252,12 @@ export function HabitsBoard({ habits }: { habits: Habit[] }) {
             <h2 className="text-[17px] leading-[22px] font-semibold tracking-tight">长期任务</h2>
             {habits.length > 0 && (
               <span className="text-[13px] font-semibold text-habit tabular-nums">
-                今日 {doneCount}/{habits.length}
+                本周达标 {metCount}/{habits.length}
               </span>
             )}
           </div>
-          <p className="mt-0.5 text-[13px] leading-[18px] text-muted-foreground">
-            背单词、阅读、运动这类每天都要做的事。打卡后仍留在这里，明天继续。
+          <p className="mt-0.5 text-[13px] leading-5 text-muted-foreground">
+            按周设定次数。背单词可以每周 7 次，健身可以每周 3 次。每天最多记 1 次。
           </p>
         </div>
       </header>

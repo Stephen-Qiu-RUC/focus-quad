@@ -18,12 +18,14 @@ export interface Task {
   sample?: boolean;
 }
 
-/** Something you keep doing, such as memorizing vocabulary. Checking in does not remove it. */
+/** Something you keep doing. One check-in per day, with a weekly target. */
 export interface Habit {
   id: string;
   title: string;
   notes: string;
   createdAt: string;
+  /** How many days this week count as done. 1–7. */
+  timesPerWeek: number;
   /** Local calendar days (YYYY-MM-DD) that were checked in. */
   doneOn: string[];
   sample?: boolean;

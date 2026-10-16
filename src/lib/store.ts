@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { nanoid } from "nanoid";
 import type { ContainerId, Habit, PersistedState, Task } from "./types";
-import { dayKey } from "./habits";
+import { clampTimesPerWeek, dayKey } from "./habits";
 
 const STORAGE_KEY = "quadrant:v1";
 
@@ -78,6 +78,7 @@ function createHabit(partial: Partial<Habit> & { title: string }): Habit {
     createdAt: new Date().toISOString(),
     doneOn: [],
     ...partial,
+    timesPerWeek: clampTimesPerWeek(partial.timesPerWeek ?? 7),
   };
 }
 
@@ -86,9 +87,10 @@ function sampleHabits(): Habit[] {
     createHabit({
       sample: true,
       title: "背英语单词",
-      notes: "每天 20 个。打卡后它会留在这里，明天继续。",
+      notes: "每天 20 个。",
+      timesPerWeek: 7,
     }),
-    createHabit({ sample: true, title: "阅读 20 分钟" }),
+    createHabit({ sample: true, title: "健身", notes: "隔天一次就够。", timesPerWeek: 3 }),
   ];
 }
 
@@ -103,14 +105,24 @@ function isValidState(value: unknown): value is PersistedState {
 
 function normalizeHabits(value: unknown): Habit[] {
   if (!Array.isArray(value)) return [];
-  return value.filter(
-    (item): item is Habit =>
-      typeof item === "object" &&
-      item !== null &&
-      typeof (item as Habit).id === "string" &&
-      typeof (item as Habit).title === "string" &&
-      Array.isArray((item as Habit).doneOn),
-  );
+  const habits: Habit[] = [];
+  for (const item of value) {
+    if (typeof item !== "object" || item === null) continue;
+    const raw = item as Partial<Habit>;
+    if (typeof raw.id !== "string" || typeof raw.title !== "string" || !Array.isArray(raw.doneOn)) {
+      continue;
+    }
+    habits.push({
+      id: raw.id,
+      title: raw.title,
+      notes: typeof raw.notes === "string" ? raw.notes : "",
+      createdAt: typeof raw.createdAt === "string" ? raw.createdAt : new Date().toISOString(),
+      timesPerWeek: clampTimesPerWeek(raw.timesPerWeek),
+      doneOn: raw.doneOn.filter((day): day is string => typeof day === "string"),
+      sample: raw.sample,
+    });
+  }
+  return habits;
 }
 
 function load(): StoreState {
@@ -290,16 +302,25 @@ export const actions = {
     }));
   },
 
-  addHabit(title: string, notes = "") {
-    const habit = createHabit({ title, notes });
+  addHabit(title: string, notes = "", timesPerWeek = 7) {
+    const habit = createHabit({ title, notes, timesPerWeek });
     setState((s) => ({ ...s, habits: [...s.habits, habit] }));
     return habit;
   },
 
-  updateHabit(id: string, patch: Partial<Pick<Habit, "title" | "notes">>) {
+  updateHabit(id: string, patch: Partial<Pick<Habit, "title" | "notes" | "timesPerWeek">>) {
     setState((s) => ({
       ...s,
-      habits: s.habits.map((h) => (h.id === id ? { ...h, ...patch } : h)),
+      habits: s.habits.map((h) =>
+        h.id === id
+          ? {
+              ...h,
+              ...patch,
+              timesPerWeek:
+                patch.timesPerWeek === undefined ? h.timesPerWeek : clampTimesPerWeek(patch.timesPerWeek),
+            }
+          : h,
+      ),
     }));
   },
 

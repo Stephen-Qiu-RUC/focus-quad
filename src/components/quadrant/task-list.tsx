@@ -34,10 +34,10 @@ function SortableTask({ task, container }: { task: Task; container: ContainerId 
 }
 
 const rowMotion = {
-  initial: { opacity: 0, height: 0 },
-  animate: { opacity: 1, height: "auto" },
-  exit: { opacity: 0, height: 0 },
-  transition: { duration: 0.24, ease: [0.32, 0.72, 0, 1] as const },
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
+  transition: { duration: 0.2 },
 };
 
 interface TaskListProps {
@@ -56,12 +56,12 @@ export function TaskList({ container, tasks, completed = [], empty, className }:
     <div
       ref={setNodeRef}
       data-over={isOver || undefined}
-      className={cn("flex min-h-full flex-col rounded-xl transition-colors", className)}
+      className={cn("flex flex-col gap-1.5 rounded-xl transition-colors", className)}
     >
       <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
         <AnimatePresence initial={false}>
           {tasks.map((task) => (
-            <motion.div key={task.id} {...rowMotion} className="overflow-hidden">
+            <motion.div key={task.id} {...rowMotion} className="shrink-0">
               <SortableTask task={task} container={container} />
             </motion.div>
           ))}
@@ -70,7 +70,7 @@ export function TaskList({ container, tasks, completed = [], empty, className }:
       {tasks.length === 0 && completed.length === 0 && empty}
       <AnimatePresence initial={false}>
         {completed.map((task) => (
-          <motion.div key={task.id} {...rowMotion} className="overflow-hidden">
+          <motion.div key={task.id} {...rowMotion} className="shrink-0">
             <TaskRow
               task={task}
               now={now}

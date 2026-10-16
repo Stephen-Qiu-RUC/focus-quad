@@ -132,10 +132,10 @@ function ExpandedView({ id, tasks }: { id: ContainerId; tasks: Task[] }) {
                 {open.map((t) => (
                   <motion.div
                     key={t.id}
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0, x: 40 }}
-                    className="overflow-hidden"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0, x: 40 }}
+                    className="shrink-0"
                   >
                     <TaskRow
                       task={t}

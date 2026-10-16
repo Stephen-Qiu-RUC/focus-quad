@@ -67,7 +67,7 @@ export const TaskRow = forwardRef<HTMLDivElement, TaskRowProps>(function TaskRow
         if (e.key === "Enter") onOpen?.(task.id);
       }}
       className={cn(
-        "group/row relative flex cursor-default items-start gap-3 rounded-xl px-2.5 py-2 text-left outline-none transition-colors select-none",
+        "group/row relative flex cursor-default items-start gap-3 rounded-xl px-3 py-2.5 text-left outline-none transition-colors select-none",
         "hover:bg-foreground/[0.04] focus-visible:ring-3 focus-visible:ring-ring/30 data-selected:bg-primary/10",
         lifted && "material scale-[1.03] cursor-grabbing bg-card shadow-lift",
         ghost && "opacity-30",
@@ -85,22 +85,22 @@ export const TaskRow = forwardRef<HTMLDivElement, TaskRowProps>(function TaskRow
       <div className="min-w-0 flex-1">
         <p
           className={cn(
-            "text-[15px] leading-5 break-words transition-colors duration-300",
+            "text-[15px] leading-6 break-words transition-colors duration-300",
             checked && "text-muted-foreground line-through decoration-muted-foreground/60",
           )}
         >
           {task.title}
         </p>
         {(due || task.tags.length > 0 || task.notes) && (
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] leading-[18px] text-muted-foreground">
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] leading-5 text-muted-foreground">
             {due && (
               <span
                 className={cn("inline-flex items-center gap-1 tabular-nums", overdue && "text-q1")}
               >
                 {task.dueHasTime ? (
-                  <AlarmClock className="size-3" aria-hidden />
+                  <AlarmClock className="size-3.5 shrink-0" aria-hidden />
                 ) : (
-                  <CalendarDays className="size-3" aria-hidden />
+                  <CalendarDays className="size-3.5 shrink-0" aria-hidden />
                 )}
                 {overdue ? `已逾期 · ${due}` : due}
               </span>
