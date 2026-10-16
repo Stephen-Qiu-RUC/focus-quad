@@ -9,6 +9,7 @@ import { AppHeader } from "./app-header";
 import { DndBoard } from "./dnd-board";
 import { InboxSection, TagFilterList } from "./inbox-panel";
 import { DesktopInspector, MobileInspector } from "./inspector";
+import { HabitsBoard } from "./habits-board";
 import { MatrixGrid } from "./matrix-grid";
 import { MobileMatrix } from "./mobile-matrix";
 import { Notices } from "./notices";
@@ -129,6 +130,7 @@ function AppBody() {
             </aside>
             <main className="scrollbar-thin flex min-w-0 flex-1 flex-col gap-4 overflow-auto p-5 xl:p-6">
               {notices}
+              <HabitsBoard habits={store.habits} />
               <MatrixGrid tasks={tasks} />
             </main>
             <DesktopInspector task={selected} />
@@ -136,6 +138,7 @@ function AppBody() {
         ) : isTablet ? (
           <main className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-5">
             {notices}
+            <HabitsBoard habits={store.habits} />
             <div className="max-h-64 rounded-[20px] border bg-card px-2 pt-3 pb-1 shadow-card backdrop-blur-xl">
               <InboxSection tasks={tasks} className="h-full max-h-60" />
             </div>
@@ -143,7 +146,7 @@ function AppBody() {
           </main>
         ) : (
           <div className="flex-1 overflow-y-auto">
-            <MobileMatrix tasks={tasks} notices={notices} />
+            <MobileMatrix tasks={tasks} habits={store.habits} notices={notices} />
           </div>
         )}
       </div>

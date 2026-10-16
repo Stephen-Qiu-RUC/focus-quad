@@ -2,7 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 import { nanoid } from "nanoid";
-import type { ContainerId, PersistedState, Task } from "./types";
+import type { ContainerId, Habit, PersistedState, Task } from "./types";
+import { dayKey } from "./habits";
 
 const STORAGE_KEY = "quadrant:v1";
 
@@ -70,12 +71,45 @@ function sampleTasks(): Task[] {
   ];
 }
 
+function createHabit(partial: Partial<Habit> & { title: string }): Habit {
+  return {
+    id: nanoid(10),
+    notes: "",
+    createdAt: new Date().toISOString(),
+    doneOn: [],
+    ...partial,
+  };
+}
+
+function sampleHabits(): Habit[] {
+  return [
+    createHabit({
+      sample: true,
+      title: "背英语单词",
+      notes: "每天 20 个。打卡后它会留在这里，明天继续。",
+    }),
+    createHabit({ sample: true, title: "阅读 20 分钟" }),
+  ];
+}
+
 function isValidState(value: unknown): value is PersistedState {
   return (
     typeof value === "object" &&
     value !== null &&
-    (value as PersistedState).version === 1 &&
-    Array.isArray((value as PersistedState).tasks)
+    (value as { version?: number }).version === 1 &&
+    Array.isArray((value as { tasks?: unknown }).tasks)
+  );
+}
+
+function normalizeHabits(value: unknown): Habit[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (item): item is Habit =>
+      typeof item === "object" &&
+      item !== null &&
+      typeof (item as Habit).id === "string" &&
+      typeof (item as Habit).title === "string" &&
+      Array.isArray((item as Habit).doneOn),
   );
 }
 
@@ -84,7 +118,15 @@ function load(): StoreState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (isValidState(parsed)) return { ...parsed, saveError: false };
+      if (isValidState(parsed)) {
+        return {
+          version: 1,
+          tasks: parsed.tasks,
+          habits: normalizeHabits(parsed.habits),
+          onboarded: parsed.onboarded,
+          saveError: false,
+        };
+      }
     }
   } catch {
     // fall through to a fresh state
@@ -92,6 +134,7 @@ function load(): StoreState {
   const fresh: StoreState = {
     version: 1,
     tasks: sampleTasks(),
+    habits: sampleHabits(),
     onboarded: false,
     saveError: false,
   };
@@ -100,7 +143,7 @@ function load(): StoreState {
 }
 
 function toPersisted(s: StoreState): PersistedState {
-  return { version: s.version, tasks: s.tasks, onboarded: s.onboarded };
+  return { version: s.version, tasks: s.tasks, habits: s.habits, onboarded: s.onboarded };
 }
 
 function persist(next: StoreState) {
@@ -239,7 +282,54 @@ export const actions = {
   },
 
   removeSamples() {
-    setState((s) => ({ ...s, tasks: s.tasks.filter((t) => !t.sample), onboarded: true }));
+    setState((s) => ({
+      ...s,
+      tasks: s.tasks.filter((t) => !t.sample),
+      habits: s.habits.filter((h) => !h.sample),
+      onboarded: true,
+    }));
+  },
+
+  addHabit(title: string, notes = "") {
+    const habit = createHabit({ title, notes });
+    setState((s) => ({ ...s, habits: [...s.habits, habit] }));
+    return habit;
+  },
+
+  updateHabit(id: string, patch: Partial<Pick<Habit, "title" | "notes">>) {
+    setState((s) => ({
+      ...s,
+      habits: s.habits.map((h) => (h.id === id ? { ...h, ...patch } : h)),
+    }));
+  },
+
+  toggleHabitToday(id: string, now = new Date()) {
+    const key = dayKey(now);
+    setState((s) => ({
+      ...s,
+      habits: s.habits.map((h) => {
+        if (h.id !== id) return h;
+        const done = h.doneOn.includes(key);
+        return { ...h, doneOn: done ? h.doneOn.filter((d) => d !== key) : [...h.doneOn, key] };
+      }),
+    }));
+  },
+
+  deleteHabit(id: string) {
+    const s = getState();
+    const index = s.habits.findIndex((h) => h.id === id);
+    if (index === -1) return null;
+    const habit = s.habits[index];
+    setState((st) => ({ ...st, habits: st.habits.filter((h) => h.id !== id) }));
+    return { habit, index };
+  },
+
+  restoreHabit(habit: Habit, index: number) {
+    setState((s) => {
+      const habits = [...s.habits];
+      habits.splice(Math.min(index, habits.length), 0, habit);
+      return { ...s, habits };
+    });
   },
 
   exportData(): string {
@@ -249,11 +339,17 @@ export const actions = {
   importData(json: string) {
     const parsed = JSON.parse(json);
     if (!isValidState(parsed)) throw new Error("文件格式不正确");
-    setState(() => ({ ...parsed, saveError: false }));
+    setState(() => ({
+      version: 1,
+      tasks: parsed.tasks,
+      habits: normalizeHabits(parsed.habits),
+      onboarded: parsed.onboarded,
+      saveError: false,
+    }));
   },
 
   resetAll() {
-    setState(() => ({ version: 1, tasks: [], onboarded: true, saveError: false }));
+    setState(() => ({ version: 1, tasks: [], habits: [], onboarded: true, saveError: false }));
   },
 
   retrySave() {

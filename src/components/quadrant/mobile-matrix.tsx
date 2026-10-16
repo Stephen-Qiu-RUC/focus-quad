@@ -5,8 +5,9 @@ import { ChevronLeft, ChevronRight, Inbox, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { INBOX_META, QUADRANTS, QUADRANT_BY_ID } from "@/lib/quadrants";
 import { formatToday, needsEscalation } from "@/lib/dates";
-import type { ContainerId, Task } from "@/lib/types";
+import type { ContainerId, Habit, Task } from "@/lib/types";
 import { EmptyState } from "./empty-state";
+import { HabitsBoard } from "./habits-board";
 import { InlineAdd } from "./inline-add";
 import { TaskList } from "./task-list";
 import { TaskRow } from "./task-row";
@@ -161,7 +162,15 @@ function ExpandedView({ id, tasks }: { id: ContainerId; tasks: Task[] }) {
   );
 }
 
-export function MobileMatrix({ tasks, notices }: { tasks: Task[]; notices: React.ReactNode }) {
+export function MobileMatrix({
+  tasks,
+  habits,
+  notices,
+}: {
+  tasks: Task[];
+  habits: Habit[];
+  notices: React.ReactNode;
+}) {
   const { now, expanded, setExpanded, tagFilter, setTagFilter, openQuickAdd } = useUI();
   const total = tasks.filter((t) => !t.completed).length;
   const inbox = tasksIn(tasks, "inbox", tagFilter).open;
@@ -178,6 +187,8 @@ export function MobileMatrix({ tasks, notices }: { tasks: Task[]; notices: React
         </div>
 
         {notices}
+
+        <HabitsBoard habits={habits} />
 
         {tags.length > 0 && (
           <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none]">

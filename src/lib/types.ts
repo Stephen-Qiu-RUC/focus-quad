@@ -18,8 +18,20 @@ export interface Task {
   sample?: boolean;
 }
 
+/** Something you keep doing, such as memorizing vocabulary. Checking in does not remove it. */
+export interface Habit {
+  id: string;
+  title: string;
+  notes: string;
+  createdAt: string;
+  /** Local calendar days (YYYY-MM-DD) that were checked in. */
+  doneOn: string[];
+  sample?: boolean;
+}
+
 export interface PersistedState {
   version: 1;
   tasks: Task[];
+  habits: Habit[];
   onboarded: boolean;
 }

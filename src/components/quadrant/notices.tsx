@@ -62,7 +62,7 @@ export function Notices({ tasks, onboarded, saveError }: { tasks: Task[]; onboar
               <p className="flex-1 text-[15px] leading-5">
                 <span className="font-medium">欢迎使用四象。</span>
                 <span className="text-muted-foreground">
-                  把收集箱里的任务拖进象限：上排重要，左列紧急。按 ⌘K 或 N 可随时记下新任务。
+                  把收集箱里的任务拖进象限：上排重要，左列紧急。每天都要做的事放在「长期任务」里打卡。按 ⌘K 或 N 可随时记下新任务。
                 </span>
               </p>
               <div className="flex shrink-0 gap-2">

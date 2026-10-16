@@ -31,6 +31,7 @@
   --color-q2: var(--q2);
   --color-q3: var(--q3);
   --color-q4: var(--q4);
+  --color-habit: var(--habit);
   --color-separator: var(--separator);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -67,6 +68,7 @@
   --q2: #0a84ff;
   --q3: #ff9f0a;
   --q4: #8e8e93;
+  --habit: #30d158;
 
   --material: rgb(255 255 255 / 0.72);
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px rgb(0 0 0 / 0.06);
